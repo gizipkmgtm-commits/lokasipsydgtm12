@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Posyandu Terdekat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Cari Posyandu Terdekat</h2>
+<button onclick="cariLokasi()">Temukan Posyandu</button>
+
+<div id="result"></div>
+
+<script>
+
+// DATA POSYANDU + LINK WHATSAPP
+const posyanduList = [
+  {
+    nama: "Posyandu Mawar",
+    lat: -3.427808715814898,  
+    lng: 114.82598559586641,
+    wa: "https://chat.whatsapp.com/DwYiaMoH8TsGWufY0lrfz6"
+  },
+  {
+    nama: "Posyandu Melati",
+    lat: -3.4253026564559663,  
+    lng: 114.82718722558798,
+    wa: "https://chat.whatsapp.com/DwYiaMoH8TsGWufY0lrfz6"
+  },
+  {
+    nama: "Posyandu Anggrek",
+    lat: -3.4400,
+    lng: 114.8420,
+    wa: "https://chat.whatsapp.com/CONTOH3"
+  }
+];
+
+// HITUNG JARAK
+function hitungJarak(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) *
+    Math.sin(dLon/2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// CARI POSYANDU TERDEKAT
+function cariLokasi() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+
+      let userLat = position.coords.latitude;
+      let userLng = position.coords.longitude;
+
+      let terdekat = null;
+      let jarakTerdekat = 999;
+
+      posyanduList.forEach(p => {
+        let jarak = hitungJarak(userLat, userLng, p.lat, p.lng);
+        if (jarak < jarakTerdekat) {
+          jarakTerdekat = jarak;
+          terdekat = p;
+        }
+      });
+
+      let linkMaps = `https://www.google.com/maps/dir/?api=1&destination=${terdekat.lat},${terdekat.lng}`;
+
+      document.getElementById("result").innerHTML = `
+        Posyandu terdekat:<br><br>
+        ${terdekat.nama}<br>
+        Jarak: ${jarakTerdekat.toFixed(2)} km<br><br>
+
+        <a href="${linkMaps}" target="_blank">
+          <button>📍 Arah ke Lokasi</button>
+        </a><br>
+
+        <a href="${terdekat.wa}" target="_blank">
+          <button>💬 Gabung Grup WhatsApp</button>
+        </a>
+      `;
+
+    }, function() {
+      alert("Gagal mengambil lokasi");
+    });
+  } else {
+    alert("Browser tidak mendukung GPS");
+  }
+}
+
+</script>
+
+</body>
+</html>
