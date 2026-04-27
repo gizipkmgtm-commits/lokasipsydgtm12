@@ -1,117 +1,234 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Posyandu Terdekat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      padding: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 5px;
-    }
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Posyandu Terdekat</title>
+
+<style>
+body {
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #4CAF50, #81C784);
+  color:#333;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 420px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* CARD */
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  text-align: center;
+  animation: fadeIn 0.8s ease;
+}
+
+/* TITLE */
+h2 {
+  margin-bottom: 10px;
+}
+
+/* BUTTON */
+.btn {
+  display:block;
+  width:100%;
+  padding:12px;
+  margin:10px 0;
+  border:none;
+  border-radius: 12px;
+  font-size:16px;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+.btn-primary {
+  background:#4CAF50;
+  color:white;
+}
+
+.btn-primary:hover {
+  background:#43A047;
+}
+
+.btn-map {
+  background:#2196F3;
+  color:white;
+}
+
+.btn-wa {
+  background:#25D366;
+  color:white;
+}
+
+/* RESULT */
+#result {
+  margin-top:15px;
+  animation: slideUp 0.5s ease;
+}
+
+/* LOADING OVERLAY */
+#loading {
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  color:white;
+  z-index:999;
+}
+
+.spinner {
+  border:6px solid #ddd;
+  border-top:6px solid #4CAF50;
+  border-radius:50%;
+  width:50px;
+  height:50px;
+  animation: spin 1s linear infinite;
+  margin-bottom:10px;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from {opacity:0;}
+  to {opacity:1;}
+}
+
+@keyframes slideUp {
+  from {transform: translateY(20px); opacity:0;}
+  to {transform: translateY(0); opacity:1;}
+}
+</style>
 </head>
 
 <body>
 
-<h2>Cari Posyandu Terdekat</h2>
-<button onclick="cariLokasi()">Temukan Posyandu</button>
+<div class="container">
+  <div class="card">
+    <h2>📍 Posyandu Terdekat</h2>
+    <p>Temukan & gabung grup WhatsApp</p>
 
-<div id="result"></div>
+    <button class="btn btn-primary" onclick="cariLokasi()">
+      🔍 Cari Sekarang
+    </button>
+
+    <div id="result"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p id="loadingText">Mencari lokasi...</p>
+</div>
 
 <script>
+let posyanduList = [];
 
-// DATA POSYANDU + LINK WHATSAPP
-const posyanduList = [
-  {
-    nama: "Posyandu Mawar",
-    lat: -3.427808715814898,  
-    lng: 114.82598559586641,
-    wa: "https://chat.whatsapp.com/DwYiaMoH8TsGWufY0lrfz6"
-  },
-  {
-    nama: "Posyandu Melati",
-    lat: -3.4253026564559663,  
-    lng: 114.82718722558798,
-    wa: "https://chat.whatsapp.com/DwYiaMoH8TsGWufY0lrfz6"
-  },
-  {
-    nama: "Posyandu Anggrek",
-    lat: -3.4400,
-    lng: 114.8420,
-    wa: "https://chat.whatsapp.com/CONTOH3"
-  }
-];
+// LOAD DATA SHEET
+async function loadData() {
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGA0Hb8s6Tpuwo6Lx0xMTdGkAQ2RmT-y-10o2zfNpSVc20jhzxwQUCVtm43SgbtfR3C5T5G_OBHO1m/pub?gid=0&single=true&output=csv";
+  const res = await fetch(url);
+  const text = await res.text();
 
-// HITUNG JARAK
+  const rows = text.split("\n").slice(1);
+
+  posyanduList = rows.map(r => {
+    const c = r.split(",");
+    return {
+      nama: c[0],
+      lat: parseFloat(c[1]),
+      lng: parseFloat(c[2]),
+      wa: c[3]
+    };
+  });
+}
+
+// JARAK
 function hitungJarak(lat1, lon1, lat2, lon2) {
   const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const dLat = (lat2 - lat1) * Math.PI/180;
+  const dLon = (lon2 - lon1) * Math.PI/180;
 
   const a =
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) *
-    Math.sin(dLon/2);
+    Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) *
+    Math.cos(lat2*Math.PI/180) *
+    Math.sin(dLon/2)**2;
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-// CARI POSYANDU TERDEKAT
-function cariLokasi() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
+// LOADING TEXT ANIMASI
+let teks = ["Mengambil GPS...", "Menghitung jarak...", "Menentukan posyandu..."];
+let i = 0;
+setInterval(() => {
+  document.getElementById("loadingText").innerText = teks[i % teks.length];
+  i++;
+}, 1500);
 
-      let userLat = position.coords.latitude;
-      let userLng = position.coords.longitude;
+// CARI
+async function cariLokasi() {
 
-      let terdekat = null;
-      let jarakTerdekat = 999;
+  document.getElementById("loading").style.display = "flex";
+  document.getElementById("result").innerHTML = "";
 
-      posyanduList.forEach(p => {
-        let jarak = hitungJarak(userLat, userLng, p.lat, p.lng);
-        if (jarak < jarakTerdekat) {
-          jarakTerdekat = jarak;
-          terdekat = p;
-        }
-      });
-
-      let linkMaps = `https://www.google.com/maps/dir/?api=1&destination=${terdekat.lat},${terdekat.lng}`;
-
-      document.getElementById("result").innerHTML = `
-        Posyandu terdekat:<br><br>
-        ${terdekat.nama}<br>
-        Jarak: ${jarakTerdekat.toFixed(2)} km<br><br>
-
-        <a href="${linkMaps}" target="_blank">
-          <button>📍 Arah ke Lokasi</button>
-        </a><br>
-
-        <a href="${terdekat.wa}" target="_blank">
-          <button>💬 Gabung Grup WhatsApp</button>
-        </a>
-      `;
-
-    }, function() {
-      alert("Gagal mengambil lokasi");
-    });
-  } else {
-    alert("Browser tidak mendukung GPS");
+  if (posyanduList.length === 0) {
+    await loadData();
   }
-}
 
+  navigator.geolocation.getCurrentPosition(function(pos){
+
+    let userLat = pos.coords.latitude;
+    let userLng = pos.coords.longitude;
+
+    let terdekat = null;
+    let jarakMin = 999;
+
+    posyanduList.forEach(p=>{
+      let j = hitungJarak(userLat, userLng, p.lat, p.lng);
+      if(j < jarakMin){
+        jarakMin = j;
+        terdekat = p;
+      }
+    });
+
+    let maps = `https://www.google.com/maps/dir/?api=1&destination=${terdekat.lat},${terdekat.lng}`;
+
+    document.getElementById("result").innerHTML = `
+      <h3>${terdekat.nama}</h3>
+      <p>Jarak: ${jarakMin.toFixed(2)} km</p>
+
+      <button class="btn btn-map" onclick="window.open('${maps}')">
+        📍 Buka Maps
+      </button>
+
+      <button class="btn btn-wa" onclick="window.open('${terdekat.wa}')">
+        💬 Gabung WhatsApp
+      </button>
+    `;
+
+    document.getElementById("loading").style.display = "none";
+
+  }, function(){
+    document.getElementById("loading").style.display = "none";
+    alert("Gagal mengambil lokasi");
+  });
+}
 </script>
 
 </body>
