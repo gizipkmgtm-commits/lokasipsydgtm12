@@ -147,7 +147,6 @@ function bukaWA(link){
     return;
   }
 
-  // langsung buka link resmi WhatsApp
   window.location.href = cleanLink;
 }
 
@@ -187,11 +186,6 @@ async function cariLokasi() {
     document.getElementById("result").innerHTML = `
       <h3>${terdekat.nama}</h3>
 
-      <div class="jadwal-box">
-        📅 <strong>Jadwal Posyandu:</strong><br>
-        ${terdekat.jadwal}
-      </div>
-
       <p>📍 Jarak: ${jarakMin.toFixed(2)} km</p>
 
       <button class="btn btn-map" onclick="window.location.href='${maps}'">
@@ -201,6 +195,11 @@ async function cariLokasi() {
       <button class="btn btn-wa" onclick="bukaWA('${waLink}')">
         💬 Gabung WhatsApp
       </button>
+
+      <div class="jadwal-box">
+        📅 <strong>Jadwal Posyandu:</strong><br>
+        ${terdekat.jadwal}
+      </div>
     `;
 
     document.getElementById("loading").style.display = "none";
