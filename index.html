@@ -46,6 +46,14 @@ h2 { margin-bottom: 10px; }
 
 #result { margin-top:15px; }
 
+.jadwal-box{
+  background:#E8F5E9;
+  padding:10px;
+  border-radius:10px;
+  margin:10px 0;
+  font-size:14px;
+}
+
 #loading {
   display:none;
   position:fixed;
@@ -130,17 +138,16 @@ function hitungJarak(lat1, lon1, lat2, lon2) {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-// 🔥 FUNGSI AUTO BUKA WHATSAPP APP + FALLBACK
+// ✅ FUNGSI WA PALING STABIL
 function bukaWA(link){
-  let code = link.split('/').pop();
+  let cleanLink = (link || '').trim().replace(/\s/g,'');
 
-  // coba buka aplikasi
-  window.location.href = 'whatsapp://chat?code=' + code;
+  if(!cleanLink.startsWith('http')){
+    alert('Link WhatsApp tidak valid');
+    return;
+  }
 
-  // fallback ke web
-  setTimeout(()=>{
-    window.location.href = link;
-  },1500);
+  window.location.href = cleanLink;
 }
 
 async function cariLokasi() {
@@ -178,8 +185,13 @@ async function cariLokasi() {
 
     document.getElementById("result").innerHTML = `
       <h3>${terdekat.nama}</h3>
-      <p><strong>📅 Jadwal:</strong> ${terdekat.jadwal}</p>
-      <p>Jarak: ${jarakMin.toFixed(2)} km</p>
+
+      <div class="jadwal-box">
+        📅 <strong>Jadwal Posyandu:</strong><br>
+        ${terdekat.jadwal}
+      </div>
+
+      <p>📍 Jarak: ${jarakMin.toFixed(2)} km</p>
 
       <button class="btn btn-map" onclick="window.location.href='${maps}'">
         📍 Buka Maps
