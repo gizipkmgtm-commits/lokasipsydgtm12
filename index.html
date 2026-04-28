@@ -104,6 +104,19 @@ h2 { margin-bottom: 10px; }
 <script>
 let posyanduList = [];
 
+// 🔥 PARSER CSV LEBIH AMAN
+function parseCSVRow(row){
+  const regex = /(?:"([^"]*)"|([^,]+))/g;
+  let result = [];
+  let match;
+
+  while(match = regex.exec(row)){
+    result.push(match[1] || match[2]);
+  }
+
+  return result;
+}
+
 async function loadData() {
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGA0Hb8s6Tpuwo6Lx0xMTdGkAQ2RmT-y-10o2zfNpSVc20jhzxwQUCVtm43SgbtfR3C5T5G_OBHO1m/pub?gid=0&single=true&output=csv";
   const res = await fetch(url);
@@ -112,14 +125,20 @@ async function loadData() {
   const rows = text.split("\n").slice(1);
 
   posyanduList = rows.map(r => {
-    const c = r.split(",");
+    const c = parseCSVRow(r);
+
+    let wa = (c[3] || "").trim();
+    let jadwal = (c[4] || "").trim();
+
+    // bersihkan link WA
+    wa = wa.replace(/"/g, "").replace(/\s/g, "");
 
     return {
       nama: c[0]?.trim(),
       lat: parseFloat(c[1]),
       lng: parseFloat(c[2]),
-      wa: c.slice(3).join(",").trim().replace(/"/g, ""),
-      jadwal: c[4]?.trim() || "Jadwal belum tersedia"
+      wa: wa,
+      jadwal: jadwal || "Jadwal belum tersedia"
     };
   });
 }
@@ -138,7 +157,7 @@ function hitungJarak(lat1, lon1, lat2, lon2) {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-// ✅ FUNGSI WA PALING STABIL
+// ✅ WA STABIL
 function bukaWA(link){
   let cleanLink = (link || '').trim().replace(/\s/g,'');
 
@@ -177,11 +196,6 @@ async function cariLokasi() {
     let maps = `https://www.google.com/maps/dir/?api=1&destination=${terdekat.lat},${terdekat.lng}`;
 
     let waLink = terdekat.wa;
-
-    if(!waLink.startsWith("http")){
-      alert("Link WhatsApp tidak valid");
-      return;
-    }
 
     document.getElementById("result").innerHTML = `
       <h3>${terdekat.nama}</h3>
