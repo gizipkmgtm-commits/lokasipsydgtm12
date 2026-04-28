@@ -6,224 +6,131 @@
 <title>Posyandu Terdekat</title>
 
 <style>
-body {
-  margin:0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #4CAF50, #81C784);
-  color:#333;
-}
-
-.container {
-  max-width: 420px;
-  margin: auto;
-  padding: 20px;
-}
-
-.card {
-  background: white;
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  text-align: center;
-}
-
-h2 { margin-bottom: 10px; }
-
-.btn {
-  display:block;
-  width:100%;
-  padding:12px;
-  margin:10px 0;
-  border:none;
-  border-radius: 12px;
-  font-size:16px;
-  cursor:pointer;
-}
-
-.btn-primary { background:#4CAF50; color:white; }
-.btn-map { background:#2196F3; color:white; }
-.btn-wa { background:#25D366; color:white; }
-
-#result { margin-top:15px; }
-
-.jadwal-box{
-  background:#E8F5E9;
-  padding:10px;
-  border-radius:10px;
-  margin:10px 0;
-  font-size:14px;
-}
-
-#loading {
-  display:none;
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.5);
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  color:white;
-}
-
-.spinner {
-  border:6px solid #ddd;
-  border-top:6px solid #4CAF50;
-  border-radius:50%;
-  width:50px;
-  height:50px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  100% { transform: rotate(360deg); }
-}
+body { margin:0; font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#4CAF50,#81C784); color:#333; }
+.container { max-width:420px; margin:auto; padding:20px; }
+.card { background:#fff; border-radius:20px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,.15); text-align:center; }
+h2{margin-bottom:10px}
+.btn{display:block;width:100%;padding:12px;margin:10px 0;border:none;border-radius:12px;font-size:16px;cursor:pointer}
+.btn-primary{background:#4CAF50;color:#fff}
+.btn-map{background:#2196F3;color:#fff}
+.btn-wa{background:#25D366;color:#fff}
+#result{margin-top:15px}
+.jadwal-box{background:#E8F5E9;padding:10px;border-radius:10px;margin:10px 0;font-size:14px}
+#loading{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);justify-content:center;align-items:center;flex-direction:column;color:#fff}
+.spinner{border:6px solid #ddd;border-top:6px solid #4CAF50;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite}
+@keyframes spin{100%{transform:rotate(360deg)}}
 </style>
 </head>
 
 <body>
-
 <div class="container">
   <div class="card">
     <h2>📍 Posyandu Terdekat</h2>
     <p>Temukan & gabung grup WhatsApp</p>
-
-    <button class="btn btn-primary" onclick="cariLokasi()">
-      🔍 Cari Sekarang
-    </button>
-
+    <button class="btn btn-primary" onclick="cariLokasi()">🔍 Cari Sekarang</button>
     <div id="result"></div>
   </div>
 </div>
 
 <div id="loading">
   <div class="spinner"></div>
-  <p>Mencari lokasi...</p>
+  <p id="loadingText">Mengambil lokasi...</p>
 </div>
 
 <script>
 let posyanduList = [];
 
-// 🔥 PARSER CSV LEBIH AMAN
+// CSV parser aman
 function parseCSVRow(row){
-  const regex = /(?:"([^"]*)"|([^,]+))/g;
+  const regex = /(?:\"([^\"]*)\"|([^,]+))/g;
   let result = [];
   let match;
-
   while(match = regex.exec(row)){
     result.push(match[1] || match[2]);
   }
-
   return result;
 }
 
-async function loadData() {
+async function loadData(){
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGA0Hb8s6Tpuwo6Lx0xMTdGkAQ2RmT-y-10o2zfNpSVc20jhzxwQUCVtm43SgbtfR3C5T5G_OBHO1m/pub?gid=0&single=true&output=csv";
   const res = await fetch(url);
   const text = await res.text();
-
   const rows = text.split("\n").slice(1);
 
-  posyanduList = rows.map(r => {
+  posyanduList = rows.map(r=>{
     const c = parseCSVRow(r);
-
-    let wa = (c[3] || "").trim();
-    let jadwal = (c[4] || "").trim();
-
-    // bersihkan link WA
-    wa = wa.replace(/"/g, "").replace(/\s/g, "");
-
     return {
       nama: c[0]?.trim(),
       lat: parseFloat(c[1]),
       lng: parseFloat(c[2]),
-      wa: wa,
-      jadwal: jadwal || "Jadwal belum tersedia"
+      wa: (c[3]||"").trim().replace(/\s/g,''),
+      jadwal: c[4]?.trim() || "Jadwal belum tersedia"
     };
   });
 }
 
-function hitungJarak(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI/180;
-  const dLon = (lon2 - lon1) * Math.PI/180;
-
-  const a =
-    Math.sin(dLat/2)**2 +
-    Math.cos(lat1*Math.PI/180) *
-    Math.cos(lat2*Math.PI/180) *
-    Math.sin(dLon/2)**2;
-
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+function hitungJarak(lat1,lon1,lat2,lon2){
+  const R=6371;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*(2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
 }
 
-// ✅ WA STABIL
 function bukaWA(link){
-  let cleanLink = (link || '').trim().replace(/\s/g,'');
-
+  let cleanLink=(link||'').trim().replace(/\s/g,'');
   if(!cleanLink.startsWith('http')){
     alert('Link WhatsApp tidak valid');
     return;
   }
-
-  window.location.href = cleanLink;
+  window.location.href=cleanLink;
 }
 
-async function cariLokasi() {
-  document.getElementById("loading").style.display = "flex";
-  document.getElementById("result").innerHTML = "";
+function prosesLokasi(userLat,userLng){
+  let terdekat=null;
+  let jarakMin=999;
 
-  if (posyanduList.length === 0) {
-    await loadData();
-  }
-
-  navigator.geolocation.getCurrentPosition(function(pos){
-
-    let userLat = pos.coords.latitude;
-    let userLng = pos.coords.longitude;
-
-    let terdekat = null;
-    let jarakMin = 999;
-
-    posyanduList.forEach(p=>{
-      let j = hitungJarak(userLat, userLng, p.lat, p.lng);
-      if(j < jarakMin){
-        jarakMin = j;
-        terdekat = p;
-      }
-    });
-
-    let maps = `https://www.google.com/maps/dir/?api=1&destination=${terdekat.lat},${terdekat.lng}`;
-
-    let waLink = terdekat.wa;
-
-    document.getElementById("result").innerHTML = `
-      <h3>${terdekat.nama}</h3>
-
-      <p>📍 Jarak: ${jarakMin.toFixed(2)} km</p>
-
-      <button class="btn btn-map" onclick="window.location.href='${maps}'">
-        📍 Buka Maps
-      </button>
-
-      <button class="btn btn-wa" onclick="bukaWA('${waLink}')">
-        💬 Gabung WhatsApp
-      </button>
-
-      <div class="jadwal-box">
-        📅 <strong>Jadwal Posyandu:</strong><br>
-        ${terdekat.jadwal}
-      </div>
-    `;
-
-    document.getElementById("loading").style.display = "none";
-
-  }, function(){
-    document.getElementById("loading").style.display = "none";
-    alert("Gagal mengambil lokasi");
+  posyanduList.forEach(p=>{
+    let j=hitungJarak(userLat,userLng,p.lat,p.lng);
+    if(j<jarakMin){jarakMin=j;terdekat=p;}
   });
+
+  let maps=`https://www.google.com/maps/dir/?api=1&destination=${terdekat.lat},${terdekat.lng}`;
+
+  document.getElementById("result").innerHTML=`
+    <h3>${terdekat.nama}</h3>
+    <p>📍 Jarak: ${jarakMin.toFixed(2)} km</p>
+    <button class="btn btn-map" onclick="window.location.href='${maps}'">📍 Buka Maps</button>
+    <button class="btn btn-wa" onclick="bukaWA('${terdekat.wa}')">💬 Gabung WhatsApp</button>
+    <div class="jadwal-box">
+      📅 <strong>Jadwal Posyandu:</strong><br>${terdekat.jadwal}
+    </div>
+  `;
+
+  document.getElementById("loading").style.display="none";
+}
+
+async function cariLokasi(){
+  document.getElementById("loading").style.display="flex";
+  document.getElementById("result").innerHTML="";
+
+  if(posyanduList.length===0){ await loadData(); }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      prosesLokasi(pos.coords.latitude,pos.coords.longitude);
+    },
+    function(){
+      // fallback lokasi
+      prosesLokasi(-2.21,113.92);
+    },
+    {
+      enableHighAccuracy:true,
+      timeout:10000,
+      maximumAge:0
+    }
+  );
 }
 </script>
-
 </body>
 </html>
